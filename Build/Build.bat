@@ -33,7 +33,15 @@ for /F "tokens=1-4 delims=:.-" %%a in ("%VERSION%") do (
 set VERSION_SHORT=%VERSION_MAJOR%.%VERSION_MINOR%.%VERSION_SUBMINOR%
 set VERSION_FULL=%VERSION_SHORT%.%VERSION_REVISION%
 
-for /f %%i in ("git log -1 --format='%%h (%%cs)'") do set BUILD_HASH=%%i
+set GIT=%PROGRAMFILES%\Git\bin\git.exe
+if exist "%GIT%" goto GIT_FOUND
+set GIT=%GIT:Program Files\=Program Files (x86)\%
+if exist "%GIT%" goto GIT_FOUND
+set GIT=%LOCALAPPDATA%\Programs\Git\bin\GIT.exe
+if not exist "%GIT%" echo ERROR: git.exe not found & exit /b 1
+:GIT_FOUND
+
+for /f "usebackq delims= " %%i in (`"%GIT%" git log -1 --format="%%h (%%cs)"`) do set BUILD_HASH=%%i
 
 set BUILD_YEAR=%date:~-4%
 
@@ -56,7 +64,7 @@ set MSBUILD="msbuild.exe" /nologo^
 if "%BUILD_TYPE%" == "languages" goto BUILD_LANGUAGES
 if "%BUILD_TYPE%" == "installer" goto BUILD_INSTALLER
 
-echo * Starting %BUILD_TYPE% build for %VERSION_FULL%
+echo * Starting %BUILD_TYPE% build for %VERSION_FULL% (%BUILD_HASH%)
 
 :: Update Version.h
 > "..\Version.h" (
